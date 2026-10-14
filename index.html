@@ -4,11 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>SUK รายชื่อ</title>
+
+<!-- SEO พื้นฐาน -->
+<meta name="description" content="SUK รายชื่อ - ระบบค้นหาและตรวจสอบรายชื่อออนไลน์ สะดวก รวดเร็ว">
+
+<!-- Favicon -->
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+<!-- Performance -->
+<link rel="preconnect" href="https://script.google.com">
+<link rel="dns-prefetch" href="https://script.google.com">
+
 <style>
   :root {
-    /* ความสูงของแถบ "สร้างโดยผู้ใช้ Google Apps Script" ที่ต้องดันให้พ้นจอ
-       ค่าปกติอยู่ที่ประมาณ 35-46px แล้วแต่ขนาดจอ ถ้ายังเห็นแถบโผล่มา
-       ให้เพิ่มค่านี้ขึ้น เช่น 60px */
     --gas-banner-offset: 46px;
   }
 
@@ -18,14 +29,13 @@
     margin: 0;
     padding: 0;
     width: 100%;
-    height: 100vh;   /* fallback สำหรับเบราว์เซอร์ที่ไม่รู้จัก dvh */
+    height: 100vh;
     height: 100dvh;
     overflow: hidden;
     background: #ffffff;
     font-family: "Segoe UI", "Sarabun", Tahoma, sans-serif;
   }
 
-  /* กรอบนอกที่ตัดขอบ ไม่ให้เห็นส่วนเกินของ iframe (รวมถึงแถบ GAS) */
   .frame-wrap {
     position: fixed;
     top: 0;
@@ -36,7 +46,6 @@
     overflow: hidden;
   }
 
-  /* iframe สูงกว่ากรอบจริง เพื่อดันแถบ GAS ให้พ้นพื้นที่มองเห็น */
   #appFrame {
     position: absolute;
     top: 0;
@@ -47,7 +56,6 @@
     display: block;
   }
 
-  /* ----- Loading Screen ----- */
   #loader {
     position: fixed;
     top: 0;
@@ -90,6 +98,44 @@
     letter-spacing: 0.3px;
   }
 
+  #errorBox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: #ffffff;
+    z-index: 998;
+    text-align: center;
+    padding: 20px;
+  }
+
+  #errorBox p {
+    font-size: 15px;
+    color: #444;
+    margin: 0;
+  }
+
+  #retryBtn {
+    padding: 10px 24px;
+    font-size: 15px;
+    border: none;
+    border-radius: 6px;
+    background: #4285f4;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  #retryBtn:hover {
+    background: #3367d6;
+  }
+
   noscript {
     display: flex;
     align-items: center;
@@ -104,13 +150,16 @@
 </head>
 <body>
 
-  <!-- Loading screen -->
   <div id="loader">
     <div class="spinner"></div>
     <div class="loader-text">กำลังโหลด SUK รายชื่อ...</div>
   </div>
 
-  <!-- กรอบตัดขอบ ซ่อนแถบ Google Apps Script -->
+  <div id="errorBox">
+    <p>โหลดไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่</p>
+    <button id="retryBtn">ลองอีกครั้ง</button>
+  </div>
+
   <div class="frame-wrap">
     <iframe
       id="appFrame"
@@ -130,21 +179,39 @@
     (function () {
       var iframe = document.getElementById('appFrame');
       var loader = document.getElementById('loader');
-      var hidden = false;
+      var errorBox = document.getElementById('errorBox');
+      var retryBtn = document.getElementById('retryBtn');
+      var loaded = false;
+      var timeoutId;
 
       function hideLoader() {
-        if (hidden) return;
-        hidden = true;
+        if (loaded) return;
+        loaded = true;
+        clearTimeout(timeoutId);
         loader.classList.add('fade-out');
         setTimeout(function () {
           loader.style.display = 'none';
         }, 500);
       }
 
+      function showError() {
+        if (loaded) return;
+        loader.style.display = 'none';
+        errorBox.style.display = 'flex';
+      }
+
       iframe.addEventListener('load', hideLoader);
 
-      // กันเคสที่ event load ไม่ยิง (บางเบราว์เซอร์/เครือข่ายช้า)
-      setTimeout(hideLoader, 8000);
+      timeoutId = setTimeout(showError, 10000);
+
+      retryBtn.addEventListener('click', function () {
+        errorBox.style.display = 'none';
+        loader.style.display = 'flex';
+        loader.classList.remove('fade-out');
+        loaded = false;
+        iframe.src = iframe.src;
+        timeoutId = setTimeout(showError, 10000);
+      });
     })();
   </script>
 
